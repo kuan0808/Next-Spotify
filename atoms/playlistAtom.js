@@ -1,5 +1,11 @@
 import { atom } from "recoil";
 
+// Use to save playlists
+export const PlaylistsState = atom({
+  key: "playlistsState",
+  default: [],
+});
+
 // Use to save the active playlist ID
 export const PlaylistIdState = atom({
   key: "PlaylistIdState",
