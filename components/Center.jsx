@@ -55,8 +55,8 @@ const Center = () => {
     <div className="relative flex-grow text-white h-screen overflow-y-scroll scrollbar-hide">
       <header className="absolute top-5 right-8">
         <div
-          className="flex items-center justify-center bg-black space-x-3 opacity-90 hover:opacity-80 cursor-pointer rounded-full
-        p-1 pr-2 text-white"
+          className="flex items-center justify-center bg-black gap-x-3 opacity-90 hover:opacity-80 cursor-pointer rounded-full
+        p-0.5 lg:pr-2 text-white"
           onClick={signOut}
         >
           <img
@@ -64,8 +64,8 @@ const Center = () => {
             src={session?.user.image}
             alt={`${session?.user.name}'s avatar`}
           />
-          <h2 className="text-sm">{session?.user?.name}</h2>
-          <ChevronDownIcon className="w-5 h-5" />
+          <h2 className="hidden lg:inline text-sm">{session?.user?.name}</h2>
+          <ChevronDownIcon className="hidden lg:inline w-5 h-5" />
         </div>
       </header>
 
