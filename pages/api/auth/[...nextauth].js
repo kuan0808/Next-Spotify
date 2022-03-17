@@ -14,7 +14,7 @@ const refreshAccessToken = async (token) => {
     return {
       ...token,
       accessToken: refreshToken.access_token,
-      accessTokenExpiresAt: Date.now + refreshToken.expires_in * 1000, // = 1 hour as 3600 (seconds) return from spotify API
+      accessTokenExpiresAt: Date.now() + refreshToken.expires_in * 1000, // = 1 hour as 3600 (seconds) return from spotify API
       refreshToken: refreshToken.refresh_token ?? token.refreshToken, // Basically refreshToken never expires, unless spotify revoke it
     };
   } catch (error) {
