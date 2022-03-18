@@ -4,7 +4,7 @@ Next Spotify
 
 ## Demo link
 
-Access my site at (https://linkedin-clone-kuannnn.vercel.app/home)
+Access my site at (<https://next-spotify-kuannnn.vercel.app/>)
 
 ## Table of Content
 
@@ -42,4 +42,4 @@ List of contributors:
 
 ## License
 
-MIT license @ [kuannnn](author.com)
+MIT license @ [kuannnn]
