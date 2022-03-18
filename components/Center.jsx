@@ -1,14 +1,11 @@
+import React, { useState, useEffect } from "react";
 import { ChevronDownIcon } from "@heroicons/react/solid";
 import { signOut, useSession } from "next-auth/react";
-import React, { useState, useEffect } from "react";
-import { shuffle } from "lodash";
+import _, { shuffle } from "lodash";
 import { useRecoilState, useRecoilValue } from "recoil";
 
-import {
-  PlaylistIdState,
-  PlaylistsState,
-  PlaylistState,
-} from "../atoms/playlistAtom";
+import { CurrentPlaylistId } from "../atoms/playlistAtom";
+import { IsPlaying, UseSSRIsPlaying, UseSSRTracks } from "../atoms/songAtom";
 import useSpotify from "../hooks/useSpotify";
 import Songs from "./Songs";
 
@@ -22,34 +19,35 @@ const from_colors = [
   "from-purple-500",
 ];
 
-const Center = () => {
+const Center = ({ ssrTracks, ssrTrackId, ssrIsPlaying }) => {
   const spotifyApi = useSpotify();
   const { data: session } = useSession();
   const [fromColor, setFromColor] = useState(null);
-  const playlists = useRecoilValue(PlaylistsState);
-  const [playlistId, setPlaylistId] = useRecoilState(PlaylistIdState);
-  const [playlist, setPlaylist] = useRecoilState(PlaylistState);
+
+  const [tracks, setTracks] = useState([]);
+  const currentPlaylistId = useRecoilValue(CurrentPlaylistId);
+  const [useSSRTracks, setUseSSRTracks] = useRecoilState(UseSSRTracks);
+
+  const clientTracks = useSSRTracks ? ssrTracks : tracks;
 
   useEffect(() => {
-    setFromColor(shuffle(from_colors).pop());
-  }, [playlistId]);
-
-  // After user playlists being loaded in sidebar, set the playlistId to a random one
-  useEffect(() => {
-    if (playlists.length === 0) return;
-    setPlaylistId(shuffle(playlists).pop().id);
-  }, [playlists]);
+    if (currentPlaylistId) {
+      setFromColor(shuffle(from_colors).pop());
+    }
+  }, [currentPlaylistId]);
 
   // After playlistId being set, get the playlist
   useEffect(() => {
-    if (!playlistId) return;
-    spotifyApi
-      .getPlaylist(playlistId)
-      .then((data) => {
-        setPlaylist(data.body);
-      })
-      .catch((err) => console.log("Something went wrong!", err));
-  }, [spotifyApi, playlistId]);
+    if (spotifyApi.getAccessToken() && currentPlaylistId) {
+      spotifyApi
+        .getPlaylist(currentPlaylistId)
+        .then((data) => {
+          setTracks(data.body);
+          setUseSSRTracks(false);
+        })
+        .catch((err) => console.log("Something went wrong!", err));
+    }
+  }, [spotifyApi, currentPlaylistId]);
 
   return (
     <div className="relative flex-grow text-white h-screen overflow-y-scroll scrollbar-hide">
@@ -70,22 +68,28 @@ const Center = () => {
       </header>
 
       <section
-        className={`flex items-end space-x-7 bg-gradient-to-b to-black ${fromColor} h-80 text-white p-8`}
+        className={`flex items-end space-x-7 bg-gradient-to-b to-black ${
+          fromColor ?? from_colors[0]
+        } h-80 text-white p-8`}
       >
         <img
           className="w-44 h-44 shadow-2xl object-cover"
-          src={playlist?.images?.[0]?.url}
+          src={clientTracks?.images?.[0]?.url}
           alt=""
         />
         <div>
           <p>Playlist</p>
           <h1 className="text-2xl md:text-3xl xl:text-5xl font-bold">
-            {playlist?.name}
+            {clientTracks?.name}
           </h1>
         </div>
       </section>
       <div>
-        <Songs />
+        <Songs
+          tracks={clientTracks}
+          trackId={ssrTrackId}
+          ssrIsPlaying={ssrIsPlaying}
+        />
       </div>
     </div>
   );
