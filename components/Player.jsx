@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
 import { useRecoilState } from "recoil";
 import {
   HeartIcon,
@@ -16,40 +15,38 @@ import {
 } from "@heroicons/react/solid";
 import _ from "lodash";
 
-import { currentTrackState, isPlayingState } from "../atoms/songAtom";
+import {
+  CurrentTrackId,
+  IsPlaying,
+  UseSSRIsPlaying,
+  UseSSRTrack,
+} from "../atoms/songAtom";
 import useSpotify from "../hooks/useSpotify";
-import useSongInfo from "../hooks/useSongInfo";
+import useTrackInfo from "../hooks/useTrackInfo";
 
-const Player = () => {
+const Player = ({ ssrTrackInfo, ssrIsPlaying }) => {
   const spotifyApi = useSpotify();
-  const { data: session } = useSession();
-  const [currentTrackId, setCurrentTrackId] = useRecoilState(currentTrackState);
-  const [isPlaying, setIsPlaying] = useRecoilState(isPlayingState);
-  const [volume, setVolume] = useState(50);
+  const [isPlaying, setIsPlaying] = useRecoilState(IsPlaying);
+  const [useSSRIsPlaying, setUseSSRIsPlaying] = useRecoilState(UseSSRIsPlaying);
 
-  const songInfo = useSongInfo();
+  const [currentTrackId, setCurrentTrackId] = useRecoilState(CurrentTrackId);
+  const [useSSRTrack, setUseSSRTrack] = useRecoilState(UseSSRTrack);
+  const trackInfo = useTrackInfo();
 
-  // If no song is selected in this app, fetch the current song from Spotify
-  const fetchCurrentSong = async () => {
-    spotifyApi.getMyCurrentPlayingTrack().then((data) => {
-      setCurrentTrackId(data.body?.item?.id);
+  const [volume, setVolume] = useState(70);
 
-      spotifyApi.getMyCurrentPlaybackState().then((data) => {
-        setIsPlaying(data.body?.is_playing);
-      });
-    });
-  };
+  const clientTrackInfo = useSSRTrack ? ssrTrackInfo : trackInfo;
+  const clientIsPlaying = useSSRIsPlaying ? ssrIsPlaying : isPlaying;
 
   useEffect(() => {
-    if (spotifyApi.getAccessToken() && !songInfo) {
-      // Fetch the song info
-      fetchCurrentSong();
-      setVolume(50);
+    if (volume > 0 && volume < 100) {
+      debounceAdjustVolume(volume);
     }
-  }, [songInfo, spotifyApi, session]);
+  }, [volume]);
 
   const handlePlayPause = async () => {
     spotifyApi.getMyCurrentPlaybackState().then((data) => {
+      setUseSSRIsPlaying(false);
       if (data.body?.is_playing) {
         spotifyApi.pause();
         setIsPlaying(false);
@@ -60,11 +57,12 @@ const Player = () => {
     });
   };
 
-  useEffect(() => {
-    if (volume > 0 && volume < 100) {
-      debounceAdjustVolume(volume);
-    }
-  }, [volume]);
+  const fetchCurrentSong = async () => {
+    await spotifyApi.getMyCurrentPlayingTrack().then((data) => {
+      console.log(data);
+      setCurrentTrackId(data.body?.item?.id);
+    });
+  };
 
   // Debounce the volume adjustment to avoid spamming the API
   const debounceAdjustVolume = useCallback(
@@ -73,20 +71,18 @@ const Player = () => {
     }, 300),
     []
   );
-
-  console.log(songInfo);
   return (
     <div className="h-24 bg-gradient-to-b from-black to-gray-900 text-white grid grid-cols-3 text-sm px-2 md:px-8">
       {/* Left */}
       <div className="flex items-center space-x-4">
         <img
           className="hidden md:inline h-10 w-10"
-          src={songInfo?.album?.images?.[0]?.url}
-          alt={songInfo?.name}
+          src={clientTrackInfo?.album?.images?.[0]?.url}
+          alt={clientTrackInfo?.name}
         />
         <div>
-          <h3>{songInfo?.name}</h3>
-          <p className="text-xs">{songInfo?.artists?.[0]?.name}</p>
+          <h3>{clientTrackInfo?.name}</h3>
+          <p className="text-xs">{clientTrackInfo?.artists?.[0]?.name}</p>
         </div>
       </div>
 
@@ -95,23 +91,20 @@ const Player = () => {
         <SwitchHorizontalIcon className="button" />
         <RewindIcon
           onClick={() => {
-            spotifyApi.skipToPrevious().then(fetchCurrentSong());
-            // fetchCurrentSong();
+            spotifyApi.skipToPrevious();
+            fetchCurrentSong();
           }}
           className="button"
         />
-        {isPlaying ? (
+        {clientIsPlaying ? (
           <PauseIcon className="button w-10 h-10" onClick={handlePlayPause} />
         ) : (
           <PlayIcon onClick={handlePlayPause} className="button w-10 h-10" />
         )}
         <FastForwardIcon
-          onClick={() =>
-            spotifyApi.skipToNext().then(() => {
-              console.log("next");
-              fetchCurrentSong();
-            })
-          }
+          onClick={() => {
+            spotifyApi.skipToNext();
+          }}
           className="button"
         />
         <ReplyIcon className="button" />

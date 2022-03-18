@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   HomeIcon,
   SearchIcon,
@@ -7,25 +7,38 @@ import {
   HeartIcon,
   RssIcon,
 } from "@heroicons/react/outline";
-import { signOut, useSession } from "next-auth/react";
 import { useRecoilState } from "recoil";
+import clsx from "clsx";
 
 import useSpotify from "../hooks/useSpotify";
-import { PlaylistIdState, PlaylistsState } from "../atoms/playlistAtom";
+import {
+  CurrentPlaylistId,
+  RefreshPlaylists,
+  UseSSRPlaylists,
+} from "../atoms/playlistAtom";
 
-const Sidebar = () => {
+const Sidebar = ({ ssrPlaylists, ssrPlaylistId }) => {
   const spotifyApi = useSpotify();
-  const { data: session } = useSession();
-  const [playlists, setPlaylists] = useRecoilState(PlaylistsState);
-  const [playlistId, setPlaylistId] = useRecoilState(PlaylistIdState);
+  const [playlists, setPlaylists] = useState([]);
+  const [useSSRPlaylists, setUseSSRPlaylists] = useRecoilState(UseSSRPlaylists);
+  const [refreshPlaylists, setRefreshPlaylists] = useRecoilState(
+    RefreshPlaylists
+  );
+  const [currentPlaylistId, setCurrentPlaylistId] = useRecoilState(
+    CurrentPlaylistId
+  );
 
   useEffect(() => {
-    if (spotifyApi.getAccessToken()) {
+    if (spotifyApi.getAccessToken() && refreshPlaylists) {
       spotifyApi.getUserPlaylists().then((data) => {
         setPlaylists(data.body.items);
       });
+      setRefreshPlaylists(false);
+      setUseSSRPlaylists(false);
     }
-  }, [session, spotifyApi]);
+  }, [refreshPlaylists, spotifyApi]);
+
+  const clientPlaylists = useSSRPlaylists ? ssrPlaylists : playlists;
 
   return (
     <div className="text-gray-500 p-5 text-xs lg:text-sm border-r border-gray-900 overflow-y-scroll scrollbar-hide h-screen min-w-[10rem] sm:max-w-[12rem] lg:max-w-[15rem] hidden md:inline-flex pb-36">
@@ -59,11 +72,14 @@ const Sidebar = () => {
         <hr className="border-t-[0.1px] border-gray-900" />
 
         {/* PlayLists */}
-        {playlists.map((playlist) => (
+        {clientPlaylists.map((playlist) => (
           <p
             key={playlist.id}
-            className="cursor-pointer hover:text-white"
-            onClick={() => setPlaylistId(playlist.id)}
+            className={clsx("cursor-pointer hover:text-white", {
+              "text-white":
+                (currentPlaylistId ?? ssrPlaylistId) === playlist.id,
+            })}
+            onClick={() => setCurrentPlaylistId(playlist.id)}
           >
             {playlist.name}
           </p>
