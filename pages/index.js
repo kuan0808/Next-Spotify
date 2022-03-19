@@ -64,21 +64,21 @@ export const getServerSideProps = async (ctx) => {
   // Chaining the promises to avoid API errors when fetching current track info & playing status
   const result = await spotifyApi
     .getMyDevices()
-    .then(async function (data) {
+    .then(async (data) => {
       // See if there's a active device available to prevent API error
       let availableDevices = data.body.devices;
       let hasActiveDevice = availableDevices.some((device) => device.is_active);
       if (!hasActiveDevice) {
         console.log("No active device found, setting first device as active");
-        spotifyApi
+        return spotifyApi
           .play({
             device_id: availableDevices[0].id,
           })
           .then(() => {
-            spotifyApi.pause({
+            console.log("Device active");
+            return spotifyApi.pause({
               device_id: availableDevices[0].id,
             });
-            console.log("Device active");
           });
       }
     })
@@ -107,7 +107,7 @@ export const getServerSideProps = async (ctx) => {
     .then((acc) => {
       return acc;
     })
-    .catch((err) => cpnsole.log(err));
+    .catch((err) => console.log(err));
 
   return {
     props: {
