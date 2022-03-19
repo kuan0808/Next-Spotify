@@ -33,10 +33,25 @@ const Player = ({ ssrTrackInfo, ssrIsPlaying }) => {
   const [useSSRTrack, setUseSSRTrack] = useRecoilState(UseSSRTrack);
   const trackInfo = useTrackInfo();
 
-  const [volume, setVolume] = useState(70);
+  const [volume, setVolume] = useState(0);
+
+  const [updateTrackId, setUpdateTrackId] = useState(false);
 
   const clientTrackInfo = useSSRTrack ? ssrTrackInfo : trackInfo;
   const clientIsPlaying = useSSRIsPlaying ? ssrIsPlaying : isPlaying;
+
+  useEffect(() => {
+    if (spotifyApi.getAccessToken() && updateTrackId) {
+      const fetchCurrentTrack = async () => {
+        let trackId = await spotifyApi
+          .getMyCurrentPlayingTrack()
+          .then((data) => data?.body?.item?.id);
+        setCurrentTrackId(trackId);
+      };
+      setTimeout(fetchCurrentTrack, 500);
+      setUpdateTrackId(false);
+    }
+  }, [updateTrackId]);
 
   useEffect(() => {
     if (volume > 0 && volume < 100) {
@@ -45,23 +60,49 @@ const Player = ({ ssrTrackInfo, ssrIsPlaying }) => {
   }, [volume]);
 
   const handlePlayPause = async () => {
-    spotifyApi.getMyCurrentPlaybackState().then((data) => {
-      setUseSSRIsPlaying(false);
-      if (data.body?.is_playing) {
-        spotifyApi.pause();
+    const data = await spotifyApi.getMyCurrentPlaybackState();
+    setUseSSRIsPlaying(false);
+    if (data.body?.is_playing) {
+      return spotifyApi.pause().then(() => {
         setIsPlaying(false);
-      } else {
-        spotifyApi.play();
+      });
+    } else {
+      return spotifyApi.play().then(() => {
         setIsPlaying(true);
-      }
-    });
+      });
+    }
   };
 
-  const fetchCurrentSong = async () => {
-    await spotifyApi.getMyCurrentPlayingTrack().then((data) => {
-      console.log(data);
-      setCurrentTrackId(data.body?.item?.id);
-    });
+  const handleSkipSong = async (operation) => {
+    const url = `https://api.spotify.com/v1/me/player/${operation}`;
+    try {
+      await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${spotifyApi.getAccessToken()}`,
+          "content-type": "application/json",
+        },
+      });
+      setUpdateTrackId(true);
+    } catch (e) {
+      console.log(e);
+    }
+    // try {
+    //   await fetch(url, {
+    //     method: "POST",
+    //     headers: {
+    //       Authorization: `Bearer ${spotifyApi.getAccessToken()}`,
+    //       "content-type": "application/json",
+    //     },
+    //   });
+    //   const trackId = await spotifyApi
+    //     .getMyCurrentPlayingTrack()
+    //     .then((data) => data.body.item.name);
+    //   console.log(trackId);
+    //   // setCurrentTrackId(trackId);
+    // } catch (e) {
+    //   console.log(e);
+    // }
   };
 
   // Debounce the volume adjustment to avoid spamming the API
@@ -90,10 +131,7 @@ const Player = ({ ssrTrackInfo, ssrIsPlaying }) => {
       <div className="flex items-center justify-evenly">
         <SwitchHorizontalIcon className="button" />
         <RewindIcon
-          onClick={() => {
-            spotifyApi.skipToPrevious();
-            fetchCurrentSong();
-          }}
+          onClick={() => handleSkipSong("previous")}
           className="button"
         />
         {clientIsPlaying ? (
@@ -102,9 +140,7 @@ const Player = ({ ssrTrackInfo, ssrIsPlaying }) => {
           <PlayIcon onClick={handlePlayPause} className="button w-10 h-10" />
         )}
         <FastForwardIcon
-          onClick={() => {
-            spotifyApi.skipToNext();
-          }}
+          onClick={() => handleSkipSong("next")}
           className="button"
         />
         <ReplyIcon className="button" />

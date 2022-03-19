@@ -12,8 +12,10 @@ Project Description
   - [ ] Compability issues: To much helper states in order to invalidate server side props
 
 - [ ] Spotify API issues
-  - [ ] Already use chaining promises to active a device, but still need to refresh the page after an unknown error
-  - [ ] Request the current song after previous/next song operation, but always lag by 1
+  - [x] Already use chaining promises to active a device, but still need to refresh the page after an unknown error
+        - Fixed the promise chain so that it performs properly now
+  - [x] Request the current song after previous/next song operation, but always lag by 1
+        - Use setTimeout to prevent getting the lagged result
 
 - [ ] Maybe switch to React-query hydration with SSR
 
