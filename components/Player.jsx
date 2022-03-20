@@ -50,6 +50,7 @@ const Player = ({ ssrTrackInfo, ssrIsPlaying }) => {
       };
       setTimeout(fetchCurrentTrack, 500);
       setUpdateTrackId(false);
+      setUseSSRIsPlaying(false);
     }
   }, [updateTrackId]);
 
