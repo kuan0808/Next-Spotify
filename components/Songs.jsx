@@ -10,6 +10,8 @@ const Songs = ({ tracks, trackId, ssrIsPlaying }) => {
           track={track}
           order={idx}
           trackId={trackId}
+          // Pass the uri of the playlist to the Song component
+          context_uri={tracks.uri}
           ssrIsPlaying={ssrIsPlaying}
         />
       ))}

@@ -12,7 +12,7 @@ import useSpotify from "../hooks/useSpotify";
 import { millisecondsToMinutesAndSeconds } from "../lib/time";
 import PlayingIcon from "./PlayingIcon";
 
-const Song = ({ track, order, trackId, ssrIsPlaying }) => {
+const Song = ({ track, order, trackId, ssrIsPlaying, context_uri }) => {
   const spotifyApi = useSpotify();
   const [currentTrackId, setCurrentTrackId] = useRecoilState(CurrentTrackId);
   const [isPlaying, setIsPlaying] = useRecoilState(IsPlaying);
@@ -30,7 +30,14 @@ const Song = ({ track, order, trackId, ssrIsPlaying }) => {
         setIsPlaying(false);
       } else {
         spotifyApi.play({
-          uris: [track.track.uri],
+          // uris: [track.track.uri],
+          // Use playlist's uri(context_uri) and offset
+          // instead of track's uri so that the player is aware of the playing track is in the playlist
+          // to make the next/previous operation work
+          context_uri: context_uri,
+          offset: {
+            position: order,
+          },
         });
         // | This will trigger the useTrackInfo hook to update the trackInfo state
         // v and invalidate server side data

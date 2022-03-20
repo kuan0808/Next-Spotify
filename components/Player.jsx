@@ -87,22 +87,6 @@ const Player = ({ ssrTrackInfo, ssrIsPlaying }) => {
     } catch (e) {
       console.log(e);
     }
-    // try {
-    //   await fetch(url, {
-    //     method: "POST",
-    //     headers: {
-    //       Authorization: `Bearer ${spotifyApi.getAccessToken()}`,
-    //       "content-type": "application/json",
-    //     },
-    //   });
-    //   const trackId = await spotifyApi
-    //     .getMyCurrentPlayingTrack()
-    //     .then((data) => data.body.item.name);
-    //   console.log(trackId);
-    //   // setCurrentTrackId(trackId);
-    // } catch (e) {
-    //   console.log(e);
-    // }
   };
 
   // Debounce the volume adjustment to avoid spamming the API
